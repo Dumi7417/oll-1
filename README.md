@@ -58,19 +58,19 @@ Make sure you have the following installed:
 
 ## File Descriptions
 
-1. app.py ([source](#8))
-   - Implements the backend logic for the RAG pipeline and Streamlit interface.
+1. app.py ([source](src/app.py))  
+   - Implements the backend logic for the RAG pipeline and Streamlit interface.  
    - Uses the ChromaDB vector database and Ollama llama3.2.
 
-2. page.html ([source](#9))
-   - Contains the HTML for a supplementary web interface describing ChromaDB.
+2. page.html ([source](src/page.html))  
+   - Contains the HTML for a supplementary web interface describing ChromaDB.  
 
-3. style.css ([source](#11))
-   - Styles the content of page.html.
+3. style.css ([source](src/style.css))  
+   - Styles the content of page.html.  
 
-4. requierments.txt ([source](#10))
-   - Lists the necessary Python packages.
----
+4. requirements.txt ([source](requirements.txt))  
+   - Lists the necessary Python packages.  
+
 
 ## Technical Details
 
