@@ -2,15 +2,22 @@ import os
 import streamlit as st
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 import chromadb
+import pandas as pd
+import fitz  # PyMuPDF для работы с PDF
+from docx import Document
+import logging
 
-# Configuration
+# Конфигурация
 llm_model = "llama3.2"
-base_url = "http://localhost:11434"  # Adjust the base URL for your Ollama server
+base_url = "http://localhost:11434"  # Настройте URL для вашего Ollama-сервера
 
-# Initialize ChromaDB Client
+# Инициализация ChromaDB клиента
 chroma_client = chromadb.PersistentClient(path=os.path.join(os.getcwd(), "chroma_db"))
 
-# Define a custom embedding function for ChromaDB using Ollama
+# Логирование
+logging.basicConfig(filename="query_logs.log", level=logging.INFO)
+
+# Пользовательская функция эмбеддингов для ChromaDB
 class ChromaDBEmbeddingFunction:
     def init(self, langchain_embeddings):
         self.langchain_embeddings = langchain_embeddings
@@ -20,69 +27,114 @@ class ChromaDBEmbeddingFunction:
             input = [input]
         return self.langchain_embeddings.embed_documents(input)
 
-# Initialize the embedding function
+# Инициализация функции эмбеддингов
 embedding = ChromaDBEmbeddingFunction(
     OllamaEmbeddings(model=llm_model, base_url=base_url)
 )
 
-# Define or get the ChromaDB collection
-collection_name = "rag_collection_demo_2"
-collection = chroma_client.get_or_create_collection(
+# Создание или получение коллекции
+collection_name = "constitution_collection"
+constitution_collection = chroma_client.get_or_create_collection(
     name=collection_name,
-    metadata={"description": "A collection for RAG with Ollama - Demo2"},
+    metadata={"description": "Коллекция Конституции Казахстана"},
     embedding_function=embedding
 )
 
-# Function to add documents to the ChromaDB collection
-def add_documents_to_collection(documents, ids):
+# Функция для добавления документов в коллекцию
+def add_documents_to_collection(collection, documents, ids):
     collection.add(documents=documents, ids=ids)
 
-# Function to query ChromaDB
-def query_chromadb(query_text, n_results=1):
+# Функция для обработки текста Конституции
+def preprocess_constitution(file_path):
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    articles = content.split("Article")
+    preprocessed = {f"Article {i}": text.strip() for i, text in enumerate(articles, 1) if text.strip()}
+    return preprocessed
+
+# Функция для выполнения запроса к ChromaDB
+def query_chromadb(collection, query_text, n_results=3):
     results = collection.query(
         query_texts=[query_text],
         n_results=n_results
     )
+
+    # Отладочный вывод для проверки структуры метаданных
+    print("Результаты запроса к ChromaDB:", results)
+
     return results["documents"], results["metadatas"]
 
-# Function to interact with the Ollama LLM
+# Функция взаимодействия с Ollama LLM
 def query_ollama(prompt):
     llm = OllamaLLM(model=llm_model, base_url=base_url)
     return llm.stream(prompt)
 
-# RAG pipeline: Combine ChromaDB and Ollama
+# Основной конвейер RAG
 def rag_pipeline(query_text):
-    # Retrieve relevant documents
-    retrieved_docs, metadata = query_chromadb(query_text)
-    context = " ".join(retrieved_docs[0]) if retrieved_docs else "No relevant documents found."
+    retrieved_docs, metadata = query_chromadb(constitution_collection, query_text)
 
-    # Augment the prompt with context
-    augmented_prompt = f"Context: {context}\n\nQuestion: {query_text}\nAnswer:"
+    context = "\n\n".join(retrieved_docs[0]) if retrieved_docs else "Релевантные документы не найдены."
+
+    # Обработка метаданных
+    if metadata and isinstance(metadata, list) and all(isinstance(meta, dict) for meta in metadata):
+        articles = ", ".join(meta.get("id", "N/A") for meta in metadata)
+
+    augmented_prompt = f"Контекст: {context}\n\nВопрос: {query_text}\n\nОтвет с указанием статей:"
     response = query_ollama(augmented_prompt)
-    return response
 
-# Streamlit UI
-st.title("Enhanced Chatbot with Document Upload")
+    # Собрать весь текст из генератора
+    full_response = "".join(response)
+    
+    return full_response + f"\n\nУпомянутые статьи: {articles}"
 
-# File Upload Section
-uploaded_files = st.file_uploader("Upload your documents (TXT files)", type="txt", accept_multiple_files=True)
+# Интерфейс Streamlit
+st.title("Чат-бот по Конституции Казахстана")
+
+# Предзагрузка Конституции
+constitution_file_path = "constitution_kazakhstan.txt"
+if os.path.exists(constitution_file_path):
+    st.info("Загрузка текста Конституции...")
+    constitution_content = preprocess_constitution(constitution_file_path)
+    for article, content in constitution_content.items():
+        add_documents_to_collection(constitution_collection, [content], [article])
+    st.success("Текст Конституции успешно загружен!")
+
+# Загрузка пользовательских документов
+uploaded_files = st.file_uploader(
+    "Загрузите ваши документы (.txt, .pdf, .docx, .csv)", 
+    type=["txt", "pdf", "docx", "csv"], 
+    accept_multiple_files=True
+)
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
-        content = uploaded_file.read().decode("utf-8")
         file_id = uploaded_file.name
-        add_documents_to_collection([content], [file_id])
-        st.success(f"{uploaded_file.name} has been added to the collection!")
+        # Обработка разных форматов
+        if file_id.endswith(".txt"):
+            content = uploaded_file.read().decode("utf-8")
+        elif file_id.endswith(".pdf"):
+            with fitz.open(stream=uploaded_file.read(), filetype="pdf") as pdf:
+                content = ""
+                for page in pdf:
+                    content += page.get_text()
+        elif file_id.endswith(".docx"):
+            doc = Document(uploaded_file)
+            content = "\n".join([para.text for para in doc.paragraphs])
+        elif file_id.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+            content = df.to_string()
 
-# Chat Section
-prompt = st.text_area("Enter your prompt:")
+        # Добавление контента в коллекцию
+        add_documents_to_collection(constitution_collection, [content], [file_id])
+        st.success(f"{uploaded_file.name} добавлен в коллекцию!")
 
-if st.button("Generate"):
+# Чат
+prompt = st.text_area("Введите ваш запрос:")
+
+if st.button("Сгенерировать"):
     if prompt:
-        with st.spinner("Generating response..."):
+        with st.spinner("Генерация ответа..."):
+            logging.info(f"Пользовательский запрос: {prompt}")
             response = rag_pipeline(prompt)
-            st.write("### Response:")
+            st.write("### Ответ:")
             st.write(response)
-
-# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-# .\lama\Scripts\Activate.ps1
