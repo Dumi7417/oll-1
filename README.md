@@ -1,4 +1,4 @@
-# README for ChromaDB and RAG Pipeline Application (Assignment 2)
+# README for ChromaDB and RAG Pipeline Application (Assignment 3)
 
 ## Table of Contents
 1. [Introduction](#introduction)  
@@ -13,25 +13,26 @@
 ---
 
 ## Introduction
-This project is an enhanced version of the chatbot application from **Assignment 1**, implementing a Retrieval-Augmented Generation (RAG) pipeline using **ChromaDB** and **Ollama llama3.2**. In this version, users can upload documents, and the chatbot will provide context-aware answers based on the content of those uploaded files.
+This project builds upon the functionality from **Assignment 2**, enhancing the chatbot application to serve as an AI Assistant capable of answering questions about the **Constitution of the Republic of Kazakhstan**. The application integrates a **Retrieval-Augmented Generation (RAG)** pipeline with **ChromaDB** and **Ollama llama3.2** to provide accurate, context-aware responses.
 
-The web interface is built using **Streamlit**, allowing users to interact with the chatbot by inputting prompts, uploading files, and receiving intelligent responses based on the knowledge stored in **ChromaDB**.
+Using a user-friendly interface built with **Streamlit**, the assistant allows users to interact by querying the constitution and receiving detailed answers, including specific citations of articles and sections for clarity.
 
 ---
 
 ## Features
-- **Document Upload and Processing**: Users can upload one or more `.txt` files, which are then processed and stored in the vector database.
-- **Contextual Querying**: The chatbot retrieves relevant information from the uploaded documents to answer user queries within the context of those files.
-- **Vector Indexing and Efficient Querying**: Leverages **ChromaDB** for scalable, high-performance vector data retrieval.
-- **RAG Pipeline**: Combines contextual knowledge retrieval with language modeling using **Ollama llama3.2**.
-- **User-Friendly Interface**: Includes a web interface built with **Streamlit** for easy interaction.
+- **Constitution Querying**: The AI Assistant is preloaded with the full text of the Constitution of the Republic of Kazakhstan in English, enabling users to ask detailed questions about it.  
+- **Citations and Contextual Answers**: Responses are backed by specific articles and sections, ensuring accuracy and interpretability.  
+- **Document Upload and Processing**: Users can also upload custom `.txt` files for additional queries, providing flexibility.  
+- **Vector Indexing for Fast Retrieval**: Leverages **ChromaDB** to retrieve relevant information efficiently.  
+- **RAG Pipeline**: Combines retrieval from preloaded documents (Constitution) and custom uploads with language modeling using **Ollama llama3.2**.  
+- **Streamlit Interface**: Provides an intuitive web interface for uploading documents, querying the assistant, and viewing responses.  
 
 ---
 
 ## Setup and Installation
 
 ### Prerequisites
-Make sure you have the following installed:
+Ensure the following are installed:
 - Python 3.9 or later  
 - pip  
 - A running instance of the **Ollama server** (adjustable URL)
@@ -48,78 +49,78 @@ Make sure you have the following installed:
    pip install -r requirements.txt
    ```
 
-3. Run the **Streamlit** application:  
+3. Download the English version of the Constitution of the Republic of Kazakhstan from [this link](https://www.akorda.kz/en/constitution-of-the-republic-of-kazakhstan-50912).  
+   Save it as `constitution.txt` in the project directory.
+
+4. Run the **Streamlit** application:  
    ```bash
    streamlit run app.py
    ```
 
-4. Open the application in your browser (Streamlit will provide a local URL).
+5. Open the application in your browser (Streamlit will provide a local URL).
 
 ---
 
 ## Usage
-1. **Enter your query** in the provided text area.  
-2. **Upload `.txt` files** using the upload button.  
-3. The application will process the uploaded documents and store them in **ChromaDB**.  
-4. **Ask questions** about the uploaded documents, and the chatbot will provide context-based responses.  
-5. **Press the Generate button** to receive the response.  
+1. **Preloaded Constitution Querying**:  
+   - Ask questions related to the Constitution of the Republic of Kazakhstan.  
+   - The assistant will retrieve relevant information, citing specific articles and sections.  
+
+2. **Custom Document Upload**:  
+   - Upload one or more `.txt` files to query their content alongside the Constitution.  
+   - The application will process the uploaded documents and include them in the RAG pipeline.
+
+3. **Interaction**:  
+   - Input your query in the provided text area and receive a response based on either the Constitution or uploaded files.
 
 ---
 
 ## File Descriptions
 1. **app.py** ([source](src/app.py))  
-   - Implements the backend logic for the RAG pipeline, file upload functionality, and Streamlit interface.  
-   - Uses **ChromaDB** for vector indexing and **Ollama llama3.2** for response generation.  
+   - Implements the RAG pipeline, including file upload handling, Constitution querying, and Streamlit interface logic.  
 
-2. **page.html** ([source](src/page.html))  
-   - Contains the HTML for a supplementary web interface describing the file upload feature and query process.  
+2. **constitution.txt**  
+   - Contains the full text of the Constitution of the Republic of Kazakhstan in English.  
 
-3. **style.css** ([source](src/style.css))  
-   - Styles the content of `page.html` and the **Streamlit** interface.  
+3. **requirements.txt** ([source](requirements.txt))  
+   - Lists the necessary Python libraries for the project.  
 
-4. **requirements.txt** ([source](requirements.txt))  
-   - Lists the necessary Python packages for the project.  
+4. **style.css** ([source](src/style.css))  
+   - Styles the Streamlit interface for improved usability.  
 
 ---
 
 ## Technical Details
 
-### Document Upload and Processing
-The project includes a document upload feature that accepts `.txt` files. Once uploaded, these files are processed, and their contents are embedded and stored in **ChromaDB**.
-
-### ChromaDB Initialization
-The project uses **chromadb.PersistentClient** for database interactions, initialized with:
-- A specific database path  
-- A custom embedding function based on the **langchain_ollama** library  
+### Constitution Integration
+The Constitution of the Republic of Kazakhstan is preprocessed and stored in **ChromaDB** as a vector index. This enables fast and accurate retrieval of articles and sections relevant to user queries.
 
 ### RAG Pipeline Workflow
-1. **Knowledge Retrieval**: Queries **ChromaDB** for documents matching the user prompt.  
-2. **Prompt Augmentation**: Enhances the user input with relevant content from the uploaded documents.  
-3. **LLM Response Generation**: Processes the augmented prompt via **Ollama llama3.2** to generate a contextual response.  
+1. **Knowledge Retrieval**: Queries **ChromaDB** for Constitution content or uploaded documents matching the user prompt.  
+2. **Prompt Augmentation**: Combines retrieved context with the user's query to form an augmented prompt.  
+3. **LLM Response Generation**: Processes the augmented prompt via **Ollama llama3.2** to generate context-aware responses.  
+
+### Citing Articles and Sections
+Responses include references to specific articles and sections of the Constitution for clarity and reliability. For example:  
+> "As stated in Article 2, Section 3 of the Constitution, ..."
 
 ---
 
 ## Examples
 
-Here are some example queries and the responses generated by the chatbot using uploaded documents:
+### Example 1: Constitution Query
+**Input Query**: What is the official language of the Republic of Kazakhstan?  
+**AI Response**: Based on Article 7, Section 1 of the Constitution, the official language of the Republic of Kazakhstan is Kazakh.
 
-### Example 1
+### Example 2: Custom Document Upload
 **Uploaded Document**:  
-`file1.txt` contains the following text:  
-> "The capital of Japan is Tokyo. It is one of the most populous cities in the world."
+`economy.txt` contains the following text:  
+> "The economy of Kazakhstan is largely based on oil production."
 
-**Input Query**: What is the capital of Japan?  
-**AI Response**: Based on the uploaded document, the capital of Japan is Tokyo.
-
-### Example 2
-**Uploaded Document**:  
-`photosynthesis.txt` contains the following text:  
-> "Photosynthesis is the process by which plants convert light energy into chemical energy."
-
-**Input Query**: Explain photosynthesis.  
-**AI Response**: Based on the uploaded document, photosynthesis is the process by which plants convert light energy into chemical energy.
+**Input Query**: What drives Kazakhstan's economy?  
+**AI Response**: Based on the uploaded document, the economy of Kazakhstan is largely based on oil production.
 
 ---
 
 ## License
-This project is released under the **MIT License**. Feel free to use, modify, and distribute the code, provided proper attribution is given.
+This project is released under the **MIT License**. You are free to use, modify, and distribute the code with proper attribution.
