@@ -19,15 +19,15 @@ logging.basicConfig(filename="query_logs.log", level=logging.INFO)
 
 # Пользовательская функция эмбеддингов для ChromaDB
 class ChromaDBEmbeddingFunction:
-    def init(self, langchain_embeddings):
+    def __init__(self, langchain_embeddings):  # Теперь класс принимает аргумент
         self.langchain_embeddings = langchain_embeddings
 
-    def call(self, input):
+    def __call__(self, input):
         if isinstance(input, str):
             input = [input]
         return self.langchain_embeddings.embed_documents(input)
 
-# Инициализация функции эмбеддингов
+# Создание функции эмбеддингов
 embedding = ChromaDBEmbeddingFunction(
     OllamaEmbeddings(model=llm_model, base_url=base_url)
 )
@@ -109,7 +109,7 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     for uploaded_file in uploaded_files:
         file_id = uploaded_file.name
-        # Обработка разных форматов
+# Обработка разных форматов
         if file_id.endswith(".txt"):
             content = uploaded_file.read().decode("utf-8")
         elif file_id.endswith(".pdf"):
