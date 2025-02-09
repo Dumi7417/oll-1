@@ -62,7 +62,7 @@ def query_chromadb(collection, query_text, n_results=3):
     # Отладочный вывод для проверки структуры метаданных
     print("Результаты запроса к ChromaDB:", results)
 
-    return results["documents"], results["metadatas"]
+    return results["documents"], results.get("metadatas", [])
 
 # Функция взаимодействия с Ollama LLM
 def query_ollama(prompt):
@@ -75,16 +75,21 @@ def rag_pipeline(query_text):
 
     context = "\n\n".join(retrieved_docs[0]) if retrieved_docs else "Релевантные документы не найдены."
 
+    # Инициализация переменной articles
+    articles = "Не указаны"
+
     # Обработка метаданных
     if metadata and isinstance(metadata, list) and all(isinstance(meta, dict) for meta in metadata):
-        articles = ", ".join(meta.get("id", "N/A") for meta in metadata)
+        articles_list = [meta.get("id", "N/A") for meta in metadata if meta.get("id")]
+        if articles_list:
+            articles = ", ".join(articles_list)
 
     augmented_prompt = f"Контекст: {context}\n\nВопрос: {query_text}\n\nОтвет с указанием статей:"
     response = query_ollama(augmented_prompt)
 
     # Собрать весь текст из генератора
     full_response = "".join(response)
-    
+
     return full_response + f"\n\nУпомянутые статьи: {articles}"
 
 # Интерфейс Streamlit
@@ -109,7 +114,7 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     for uploaded_file in uploaded_files:
         file_id = uploaded_file.name
-# Обработка разных форматов
+        # Обработка разных форматов
         if file_id.endswith(".txt"):
             content = uploaded_file.read().decode("utf-8")
         elif file_id.endswith(".pdf"):
