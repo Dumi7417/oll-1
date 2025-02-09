@@ -19,7 +19,7 @@ logging.basicConfig(filename="query_logs.log", level=logging.INFO)
 
 # Пользовательская функция эмбеддингов для ChromaDB
 class ChromaDBEmbeddingFunction:
-    def __init__(self, langchain_embeddings):  # Теперь класс принимает аргумент
+    def __init__(self, langchain_embeddings):
         self.langchain_embeddings = langchain_embeddings
 
     def __call__(self, input):
@@ -48,20 +48,17 @@ def add_documents_to_collection(collection, documents, ids):
 def preprocess_constitution(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
-    articles = content.split("Article")
-    preprocessed = {f"Article {i}": text.strip() for i, text in enumerate(articles, 1) if text.strip()}
+    articles = content.split("Статья")  # Обновлено для текста на русском
+    preprocessed = {f"Статья {i}": text.strip() for i, text in enumerate(articles, 1) if text.strip()}
     return preprocessed
 
 # Функция для выполнения запроса к ChromaDB
-def query_chromadb(collection, query_text, n_results=3):
+def query_chromadb(collection, query_text, n_results=5):  # Увеличено количество результатов
     results = collection.query(
         query_texts=[query_text],
         n_results=n_results
     )
-
-    # Отладочный вывод для проверки структуры метаданных
-    print("Результаты запроса к ChromaDB:", results)
-
+    print("Метаданные:", results.get("metadatas", []))  # Добавлен вывод метаданных для отладки
     return results["documents"], results.get("metadatas", [])
 
 # Функция взаимодействия с Ollama LLM
@@ -72,24 +69,11 @@ def query_ollama(prompt):
 # Основной конвейер RAG
 def rag_pipeline(query_text):
     retrieved_docs, metadata = query_chromadb(constitution_collection, query_text)
-
-    context = "\n\n".join(retrieved_docs[0]) if retrieved_docs else "Релевантные документы не найдены."
-
-    # Инициализация переменной articles
-    articles = "Не указаны"
-
-    # Обработка метаданных
-    if metadata and isinstance(metadata, list) and all(isinstance(meta, dict) for meta in metadata):
-        articles_list = [meta.get("id", "N/A") for meta in metadata if meta.get("id")]
-        if articles_list:
-            articles = ", ".join(articles_list)
-
+    context = "\n\n".join([doc for docs in retrieved_docs for doc in docs]) if retrieved_docs else "Релевантные документы не найдены."
+    articles = ", ".join([meta.get("id", "N/A") for meta_list in metadata for meta in (meta_list if isinstance(meta_list, list) else [meta_list]) if isinstance(meta, dict) and meta.get("id")]) or "Не указаны"
     augmented_prompt = f"Контекст: {context}\n\nВопрос: {query_text}\n\nОтвет с указанием статей:"
     response = query_ollama(augmented_prompt)
-
-    # Собрать весь текст из генератора
     full_response = "".join(response)
-
     return full_response + f"\n\nУпомянутые статьи: {articles}"
 
 # Интерфейс Streamlit
@@ -114,22 +98,17 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     for uploaded_file in uploaded_files:
         file_id = uploaded_file.name
-        # Обработка разных форматов
         if file_id.endswith(".txt"):
             content = uploaded_file.read().decode("utf-8")
         elif file_id.endswith(".pdf"):
             with fitz.open(stream=uploaded_file.read(), filetype="pdf") as pdf:
-                content = ""
-                for page in pdf:
-                    content += page.get_text()
+                content = "".join([page.get_text() for page in pdf])
         elif file_id.endswith(".docx"):
             doc = Document(uploaded_file)
             content = "\n".join([para.text for para in doc.paragraphs])
         elif file_id.endswith(".csv"):
             df = pd.read_csv(uploaded_file)
             content = df.to_string()
-
-        # Добавление контента в коллекцию
         add_documents_to_collection(constitution_collection, [content], [file_id])
         st.success(f"{uploaded_file.name} добавлен в коллекцию!")
 
