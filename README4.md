@@ -51,8 +51,8 @@ Ensure the following are installed:
 
 1. Clone the repository:
    ```bash
-   git clone <repository-link>
-   cd <repository-name>
+   git clone https://github.com/Dumi7417/ollamaAssignment3part1and2.git
+   cd ollamaAssignment3part1and2
    ```
 2. Install the required Python libraries:
    ```bash
