@@ -96,7 +96,7 @@ Ensure the following are installed:
 
    - Implements the **Multi Query Expansion**, **RAG Fusion**, **Chat Functionality**, and **File Upload** features using Streamlit.
 
-2. **constitution.txt**
+2. **constitution_kazakhstan.txt**
 
    - Contains the full text of the **Constitution of the Republic of Kazakhstan**.
 
@@ -104,11 +104,7 @@ Ensure the following are installed:
 
    - Lists required Python libraries.
 
-4. **vector_store.py** ([source](src/vector_store.py))
-
-   - Handles storing and retrieving queries and answers in **MongoDB/ChromaDB**.
-
-5. **style.css** ([source](src/style.css))
+4. **style.css** ([source](src/style.css))
    - Styles the Streamlit interface.
 
 ---
